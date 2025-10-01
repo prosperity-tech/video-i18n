@@ -57,7 +57,8 @@ pip install \
   "sentencepiece==0.2.0" \
   "ctranslate2==4.3.1" \
   "pydub==0.25.1" \
-  "srt==3.5.3"
+  "srt==3.5.3" \
+  "piper-tts"
 
 # ---- Ensure Argos DE→EN/FR/IT/PT models (downloaded once into $ARGOS_PACKAGES_DIR) ----
 python - <<'PY'
@@ -89,6 +90,28 @@ for p in to_install:
     pkg.install_from_path(path)
 print("Argos models ready.")
 PY
+
+# ---- Download Piper TTS models for better audio quality ----
+echo "🎙️  Setting up Piper TTS models..."
+mkdir -p piper_models
+cd piper_models
+
+# Download English model
+if [ ! -f "en_US-lessac-medium.onnx" ]; then
+    echo "Downloading English TTS model..."
+    curl -L -o en_US-lessac-medium.onnx "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx"
+    curl -L -o en_US-lessac-medium.onnx.json "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json"
+fi
+
+# Download French model
+if [ ! -f "fr_FR-siwis-medium.onnx" ]; then
+    echo "Downloading French TTS model..."
+    curl -L -o fr_FR-siwis-medium.onnx "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx"
+    curl -L -o fr_FR-siwis-medium.onnx.json "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx.json"
+fi
+
+cd ..
+echo "✅ Piper TTS models ready"
 
 # ---- Write auto_dub.py if missing ----
 if [ ! -f auto_dub.py ]; then
@@ -215,8 +238,31 @@ for tgt in targets:
 print("SRTs ready.")
 
 def say_to_aiff(text, voice, out_path):
-    cmd = ["say", "-v", voice, "-o", str(out_path), text]
-    subprocess.run(cmd, check=True)
+    # Use Piper TTS for better quality
+    # Map voice names to Piper models
+    piper_models = {
+        "Samantha": ("piper_models/en_US-lessac-medium.onnx", "piper_models/en_US-lessac-medium.onnx.json"),
+        "Thomas": ("piper_models/fr_FR-siwis-medium.onnx", "piper_models/fr_FR-siwis-medium.onnx.json"),
+        "Alice": ("piper_models/en_US-lessac-medium.onnx", "piper_models/en_US-lessac-medium.onnx.json"),  # Fallback to English
+        "Joana": ("piper_models/en_US-lessac-medium.onnx", "piper_models/en_US-lessac-medium.onnx.json"),  # Fallback to English
+    }
+    
+    if voice in piper_models:
+        model_path, config_path = piper_models[voice]
+        # Create a temporary text file for Piper
+        temp_text_file = out_path.with_suffix('.txt')
+        temp_text_file.write_text(text, encoding='utf-8')
+        
+        # Use Piper TTS
+        cmd = ["piper", "-m", model_path, "-c", config_path, "-i", str(temp_text_file), "-f", str(out_path)]
+        subprocess.run(cmd, check=True)
+        
+        # Clean up temp file
+        temp_text_file.unlink()
+    else:
+        # Fallback to macOS say command
+        cmd = ["say", "-v", voice, "-o", str(out_path), text]
+        subprocess.run(cmd, check=True)
 
 def build_vo(lang_code, voice):
     print(f"TTS {lang_code} with {voice}…")
@@ -229,9 +275,9 @@ def build_vo(lang_code, voice):
         if start_ms > cursor_ms:
             track += AudioSegment.silent(duration=(start_ms-cursor_ms), frame_rate=48000)
             cursor_ms = start_ms
-        aiff_path = segments_dir / f"{stem}.{lang_code}.{i}.aiff"
-        say_to_aiff(sub.content.replace("\n"," "), voice, aiff_path)
-        seg = AudioSegment.from_file(aiff_path)
+        wav_path = segments_dir / f"{stem}.{lang_code}.{i}.wav"
+        say_to_aiff(sub.content.replace("\n"," "), voice, wav_path)
+        seg = AudioSegment.from_file(wav_path)
         track += seg
         cursor_ms += len(seg)
     wav = outdir / f"{stem}.{lang_code}.wav"

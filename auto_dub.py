@@ -146,8 +146,31 @@ for tgt in targets:
 print("✅ All subtitle files ready!")
 
 def say_to_aiff(text, voice, out_path):
-    cmd = ["say", "-v", voice, "-o", str(out_path), text]
-    subprocess.run(cmd, check=True)
+    # Use Piper TTS for better quality
+    # Map voice names to Piper models
+    piper_models = {
+        "Samantha": ("piper_models/en_US-lessac-medium.onnx", "piper_models/en_US-lessac-medium.onnx.json"),
+        "Thomas": ("piper_models/fr_FR-siwis-medium.onnx", "piper_models/fr_FR-siwis-medium.onnx.json"),
+        "Alice": ("piper_models/en_US-lessac-medium.onnx", "piper_models/en_US-lessac-medium.onnx.json"),  # Fallback to English
+        "Joana": ("piper_models/en_US-lessac-medium.onnx", "piper_models/en_US-lessac-medium.onnx.json"),  # Fallback to English
+    }
+    
+    if voice in piper_models:
+        model_path, config_path = piper_models[voice]
+        # Create a temporary text file for Piper
+        temp_text_file = out_path.with_suffix('.txt')
+        temp_text_file.write_text(text, encoding='utf-8')
+        
+        # Use Piper TTS
+        cmd = ["piper", "-m", model_path, "-c", config_path, "-i", str(temp_text_file), "-f", str(out_path)]
+        subprocess.run(cmd, check=True)
+        
+        # Clean up temp file
+        temp_text_file.unlink()
+    else:
+        # Fallback to macOS say command
+        cmd = ["say", "-v", voice, "-o", str(out_path), text]
+        subprocess.run(cmd, check=True)
 
 def build_vo(lang_code, voice):
     print(f"🎙️  Generating TTS for {lang_code.upper()} with voice '{voice}'...")
@@ -163,9 +186,9 @@ def build_vo(lang_code, voice):
         if start_ms > cursor_ms:
             track += AudioSegment.silent(duration=(start_ms-cursor_ms), frame_rate=48000)
             cursor_ms = start_ms
-        aiff_path = segments_dir / f"{stem}.{lang_code}.{i}.aiff"
-        say_to_aiff(sub.content.replace("\n"," "), voice, aiff_path)
-        seg = AudioSegment.from_file(aiff_path)
+        wav_path = segments_dir / f"{stem}.{lang_code}.{i}.wav"
+        say_to_aiff(sub.content.replace("\n"," "), voice, wav_path)
+        seg = AudioSegment.from_file(wav_path)
         track += seg
         cursor_ms += len(seg)
     wav = outdir / f"{stem}.{lang_code}.wav"
