@@ -1,9 +1,10 @@
 # Video I18n - Multilingual Video Dubbing
 
-Automatically transcribe, translate, and dub videos with high-quality neural TTS.
+Automatically transcribe, translate, and dub videos with high-quality neural TTS. **Fully offline operation** - no internet required after initial setup.
 
 ## Features
 
+- 🔒 **Fully Offline**: No internet required after initial model download
 - 🎤 **Speech Recognition**: Whisper transcription (German → text)
 - 🌐 **Translation**: ArgosTranslate (DE → EN/FR/IT/PT)
 - 🎙️ **Text-to-Speech**: Piper TTS with neural voices
@@ -43,6 +44,7 @@ Each MP4 contains: video + language-specific audio + language-specific subtitles
 - Python 3.11+
 - FFmpeg
 - ~2GB disk space for models
+- **Internet connection**: Only needed for initial model download
 
 ## Configuration
 
