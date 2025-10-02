@@ -15,13 +15,27 @@ Automatically transcribe, translate, and dub videos with high-quality neural TTS
 # Make executable and run
 chmod +x local-dub.sh
 ./local-dub.sh your_video.mp4
+
+# Split into individual language files
+python split_languages.py out/your_video.multi.mkv
 ```
 
 ## Output
 
+### Multi-language MKV
 Creates `out/your_video.multi.mkv` with:
 - **6 Audio tracks**: Original + EN/FR/IT/PT dubs
 - **5 Subtitle tracks**: DE/EN/FR/IT/PT
+
+### Individual Language MP4s
+Run `python split_languages.py out/your_video.multi.mkv` to create:
+- `out/split/your_video.multi.de.mp4` - German version
+- `out/split/your_video.multi.en.mp4` - English version  
+- `out/split/your_video.multi.fr.mp4` - French version
+- `out/split/your_video.multi.it.mp4` - Italian version
+- `out/split/your_video.multi.pt.mp4` - Portuguese version
+
+Each MP4 contains: video + language-specific audio + language-specific subtitles
 
 ## Requirements
 
@@ -60,6 +74,9 @@ Edit `local-dub.sh` to customize:
 
 - `local-dub.sh` - Main setup and execution script
 - `auto_dub.py` - Core dubbing logic
+- `split_languages.py` - Split MKV into individual language MP4s
+- `split-languages.sh` - Bash version of split script
 - `out/` - Output directory
+- `out/split/` - Individual language MP4 files
 - `piper_models/` - TTS voice models
 - `argos_data/` - Translation models
