@@ -1,0 +1,45 @@
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Generated models and data
+argos_data/
+piper_models/
+.cache/
+.xdg/
+
+# Output files
+out/
+segments/
+
+# Input videos (user's content)
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.wmv
+*.flv
+*.webm
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test files
+test_*.wav
+test_*.aiff
+test_*.mp4
